@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d2231">
+<title>Тэнгэрийн Бөх</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&family=Noto+Serif:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header id="top" hidden>
+    <button class="chip" id="tHero" aria-label="Баатар" style="cursor:pointer;color:var(--gold,#e9b44c);font-weight:700;border:0">Бөх</button>
+    <div class="lv"><b id="tLv">Түвшин 1</b><div class="xp"><i id="tXp"></i></div></div>
+    <div class="chip" title="Алт"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#e9b44c"/><rect x="6.5" y="4" width="3" height="8" rx="1" fill="#8a6218"/></svg><span id="tGold">0</span></div>
+    <div class="chip" title="Айраг"><svg viewBox="0 0 16 16"><path d="M4 2h8l-1 4c2 1 2 3 2 5 0 2-1 3-3 3H6c-2 0-3-1-3-3 0-2 0-4 2-5z" fill="#f4e8cf"/></svg><span id="tPot">0</span></div>
+    <button id="snd" aria-label="Дуу"><svg viewBox="0 0 16 16" id="sndIcon"></svg></button>
+  </header>
+
+  <main style="flex:1;min-height:0;display:flex;flex-direction:column">
+    <section id="home" class="screen">
+      <div class="title"><h1>Тэнгэрийн Бөх</h1><p>Хээр талаар аялж, чоно, дээрэмчин, мангасыг ялна.</p></div>
+      <div class="cover"><canvas id="cvCover"></canvas></div>
+      <div class="stack">
+        <button class="btn gold" id="btnStart">Эхлэх</button>
+        <button class="btn ghost" id="btnHero">Баатар солих</button>
+        <button class="btn ghost" id="btnReset">Шинээр эхлэх</button>
+      </div>
+      <p class="sub" id="homeInfo" style="text-align:center"></p>
+    </section>
+
+    <section id="map" class="screen"></section>
+    <section id="daily" class="screen"></section>
+    <section id="quests" class="screen"></section>
+    <section id="shop" class="screen"></section>
+    <section id="gear" class="screen"></section>
+
+    <section id="battle" class="screen">
+      <div class="hud">
+        <div class="who"><b>Бөх</b><div class="hp"><i id="hHp"></i></div><div class="chi"><i id="hChi"></i></div><span class="num" id="hNum"></span></div>
+        <div class="who e"><b id="eName">Дайсан</b><div class="hp"><i id="eHp"></i></div><span class="num" id="eNum"></span></div>
+      </div>
+      <p class="intent" id="intent"></p>
+      <div class="stage">
+        <canvas id="cvBattle"></canvas>
+        <div id="timing" hidden>
+          <p>Цагаан зураас шар хэсэгт ирэхэд дар</p>
+          <div class="tb"><i class="g"></i><i class="p"></i><i class="c" id="tbc"></i></div>
+          <button class="btn gold bigbtn" id="tbHit">ЦОХ!</button>
+        </div>
+      </div>
+      <p class="log" id="log"></p>
+      <button class="tm" id="tmToggle"></button>
+      <div class="acts">
+        <button class="act main" id="aStrike"><b>Цохих</b><small>+Хийморь</small></button>
+        <button class="act" id="aThrow"><b>Бөхийн шидэлт</b><small>50 хийморь</small></button>
+        <button class="act" id="aGuard"><b>Хамгаалах</b><small>Гэмтэл 60% буурна</small></button>
+        <button class="act" id="aPotion"><b>Айраг уух</b><small id="potSmall"></small></button>
+      </div>
+      <div class="skills">
+        <button class="act sk" id="aWind"><b>Салхин цохилт</b><small></small></button>
+        <button class="act sk" id="aBless"><b>Тэнгэрийн ерөөл</b><small></small></button>
+        <button class="act sk" id="aBolt"><b>Аянга</b><small></small></button>
+      </div>
+    </section>
+  </main>
+
+  <nav id="nav" hidden>
+    <button data-go="map" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Газрын зураг</button>
+    <button data-go="daily"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2L5 14h6l-1 8 8-12h-6z"/></svg>Тулаан<i class="dot" id="dailyDot"></i></button>
+    <button data-go="quests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Даалгавар<i class="dot" id="questDot" hidden></i></button>
+    <button data-go="gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6-1-1 6-9 9-5-5z"/><path d="M5 14l-2 2M8 17l-3 3"/></svg>Эд хэрэгсэл</button>
+    <button data-go="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 4v6c0 5-4 7-8 8-4-1-8-3-8-8V7z"/></svg>Дэлгүүр</button>
+  </nav>
+</div>
+<div id="modal" hidden></div>
+<script src="game.js"></script>
+</body>
+</html>
