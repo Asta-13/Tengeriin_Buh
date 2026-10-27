@@ -369,6 +369,7 @@ function endlessL(w){
 }
 function newEndless(){
   const run={wave:1,atk:1,chi:0,ls:0,sh:false,pot:2,crit:0,def:0,heal:0,hp:heroMax(),max:heroMax(),chi0:Math.min(100,10*S.up.chi+gear().chiS),gold:0,kills:0,perks:[],drops:[]};
+  run.cp=JSON.parse(JSON.stringify(run));
   S.er[S.cls]=JSON.parse(JSON.stringify(run));save();startBattle(endlessL(1),{run});
 }
 function startEndless(){
@@ -390,24 +391,37 @@ function endlessSummary(run,cleared,r,full){
 }
 const endlessActs=()=>[{label:'Дахин эхлэх',cls:'gold',fn:()=>{endBattle();startEndless()}},{label:'Буцах',cls:'ghost',fn:()=>{endBattle();go('daily')}}];
 async function endlessCash(run,cleared){const r=await endlessPayout(run,cleared,true);modal(endlessSummary(run,cleared,r,true),endlessActs())}
-async function endlessOver(){const run=B.run,cleared=run.wave-1,r=await endlessPayout(run,cleared,false);modal(endlessSummary(run,cleared,r,false),endlessActs())}
+async function endlessOver(){
+  const run=B.run,cp=run.cp;
+  if(!cp){const r=await endlessPayout(run,run.wave-1,false);modal(endlessSummary(run,run.wave-1,r,false),endlessActs());return}
+  const r=JSON.parse(JSON.stringify(cp));r.cp=JSON.parse(JSON.stringify(cp));r.hp=r.max;r.drops=(r.drops||[]);
+  S.er[S.cls]=JSON.parse(JSON.stringify(r));save();
+  const at=r.wave-1;
+  modal('<h2>\u042f\u043b\u0430\u0433\u0434\u043b\u0430\u0430</h2><p>'+(at>0?'\u0421\u04af\u04af\u043b\u0434 \u044f\u043b\u0441\u0430\u043d \u0430\u0445\u043b\u0430\u0433\u0447 (\u0434\u0430\u0432\u0430\u043b\u0433\u0430\u0430 '+at+') \u0434\u044d\u044d\u0440\u044d\u044d\u0441 \u0434\u0430\u0445\u0438\u043d \u044d\u0445\u043b\u044d\u043d\u044d.':'\u0422\u043e\u0433\u043b\u043e\u043e\u043c\u044b\u043d \u044d\u0445\u043b\u044d\u043b\u044d\u044d\u0441 \u0434\u0430\u0445\u0438\u043d \u044d\u0445\u043b\u044d\u043d\u044d.')+' \u0410\u043c\u044c \u0431\u04af\u0440\u044d\u043d \u0441\u044d\u0440\u0433\u044d\u043d\u044d.</p><p class="mini">\u042d\u0434 \u0445\u044d\u0440\u044d\u0433\u0441\u044d\u043b \u0446\u04af\u043d\u0445\u044d\u043d\u0434 \u0445\u044d\u0432\u044d\u044d\u0440\u044d\u044d. \u0410\u043b\u0442, \u044f\u043b\u0441\u0430\u043d \u0442\u043e\u043e, \u0435\u0440\u04e9\u04e9\u043b \u043d\u044c \u0445\u0430\u0434\u0433\u0430\u043b\u0442\u044b\u043d \u0446\u044d\u0433\u0438\u0439\u043d \u0445\u044d\u043c\u0436\u044d\u044d\u043d\u0434 \u0431\u0443\u0446\u043d\u0430.</p>',
+    [{label:'\u0414\u0430\u0445\u0438\u043d \u043e\u0440\u043e\u043b\u0434\u043e\u0445 \xb7 \u0434\u0430\u0432\u0430\u043b\u0433\u0430\u0430 '+r.wave,cls:'gold',fn:()=>startBattle(endlessL(r.wave),{run:r})},{label:'\u0428\u0430\u0433\u043d\u0430\u043b\u0430\u0430 \u0430\u0432\u0430\u0430\u0434 \u0433\u0430\u0440\u0430\u0445',cls:'ghost',fn:()=>endlessCash(r,at)}]);
+}
 async function endlessWave(){
-  const run=B.run,h=B.hero,w=run.wave;
+  const run=B.run,h=B.hero,w=run.wave,boss=w%5===0;
   run.kills++;run.gold+=8+w*3;
-  const drop=rollDrop(w>=30?2:w>=15?1:0,w%5===0,false);
+  const drop=rollDrop(w>=30?2:w>=15?1:0,boss,false);
   if(drop)run.drops.push(drop);
-  if(w%5===0)run.pot++;
   h.hp=Math.min(h.max,h.hp+Math.round(h.max*(.2+run.heal)));h.bleed=null;
   run.hp=h.hp;run.max=h.max;run.chi0=Math.min(100,h.chi+20);
-  {const sn=JSON.parse(JSON.stringify(run));sn.wave=w+1;sn.np=1;S.er[S.cls]=sn}
   if(w>S.endless.best)S.endless.best=w;
-  save();updateHUD();
+  if(!boss){
+    run.wave=w+1;S.er[S.cls]=JSON.parse(JSON.stringify(run));save();updateHUD();
+    floatText(h.x,GROUND-135,'\u0414\u0430\u0432\u0430\u043b\u0433\u0430\u0430 '+w+' \u2713','#ffd54a',18);
+    toast('\u0414\u0430\u0432\u0430\u043b\u0433\u0430\u0430 '+w+' \u0434\u0430\u0432\u043b\u0430\u0430'+(drop&&!drop.sold?' \xb7 \u043e\u043b\u0437: '+iName(drop):''));
+    await sleep(900);startBattle(endlessL(w+1),{run});return;
+  }
+  run.pot++;
+  run.wave=w+1;S.er[S.cls]=JSON.parse(JSON.stringify(run));save();updateHUD();
   const pool=PERKS.filter(p=>!(p.id==='sh'&&run.sh)),picks=[];
   while(picks.length<3&&pool.length)picks.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
-  modal('<h2>Давалгаа '+w+' давлаа</h2><p class="mini">Одоогийн дүн: алт '+run.gold+' · ялсан '+run.kills+(w%5===0?' · +1 айраг':'')+'</p>'+dropHTML(drop)
-    +'<div class="card2"><b>Нэг ерөөл сонго</b>'+picks.map(p=>'<div><b>'+p.n+'</b><div class="mini">'+p.d+'</div></div>').join('')+'</div>',
-    picks.map(p=>({label:p.n,cls:'gold',fn:()=>{p.f(run,h);run.hp=h.hp;run.max=h.max;run.perks.push(p.id);run.wave=w+1;S.er[S.cls]=JSON.parse(JSON.stringify(run));save();startBattle(endlessL(w+1),{run})}}))
-     .concat([{label:'Шагналаа аваад гарах',cls:'ghost',fn:()=>endlessCash(run,w)}]));
+  modal('<h2>\u0410\u0445\u043b\u0430\u0433\u0447 ('+w+') \u044f\u043b\u0430\u0433\u0434\u043b\u0430\u0430!</h2><p class="mini">\u0428\u0438\u043d\u044d \u0445\u0430\u0434\u0433\u0430\u043b\u0430\u043b\u0442\u044b\u043d \u0446\u044d\u0433. \u0425\u044d\u0440\u0432\u044d\u044d \u044f\u043b\u0430\u0433\u0434\u0432\u044d\u043b \u044d\u043d\u044d \u0430\u0445\u043b\u0430\u0433\u0447\u0430\u0430\u0441 \u0434\u0430\u0445\u0438\u043d \u044d\u0445\u043b\u044d\u043d\u044d.</p><p class="mini">\u041e\u0434\u043e\u043e\u0433\u0438\u0439\u043d \u0434\u04af\u043d: \u0430\u043b\u0442 '+run.gold+' \xb7 \u044f\u043b\u0441\u0430\u043d '+run.kills+' \xb7 +1 \u0430\u0439\u0440\u0430\u0433</p>'+dropHTML(drop)
+    +'<div class="card2"><b>\u041d\u044d\u0433 \u0435\u0440\u04e9\u04e9\u043b \u0441\u043e\u043d\u0433\u043e</b>'+picks.map(p=>'<div><b>'+p.n+'</b><div class="mini">'+p.d+'</div></div>').join('')+'</div>',
+    picks.map(p=>({label:p.n,cls:'gold',fn:()=>{p.f(run,h);run.hp=h.hp;run.max=h.max;run.perks.push(p.id);run.wave=w+1;delete run.cp;run.cp=JSON.parse(JSON.stringify(run));S.er[S.cls]=JSON.parse(JSON.stringify(run));save();startBattle(endlessL(w+1),{run})}}))
+     .concat([{label:'\u0428\u0430\u0433\u043d\u0430\u043b\u0430\u0430 \u0430\u0432\u0430\u0430\u0434 \u0433\u0430\u0440\u0430\u0445',cls:'ghost',fn:()=>endlessCash(run,w)}]));
 }
 
 /* ---------- quests ---------- */
@@ -766,6 +780,7 @@ function drawBattle(t,dt){
   }
   for(let i=B.ghosts.length-1;i>=0;i--){const g=B.ghosts[i];g.life-=dt;if(g.life<=0){B.ghosts.splice(i,1);continue}
     drawHero(c,Object.assign({},h,{off:g.off,arm:g.arm,flash:.6,alpha:g.life/.18*.3,shield:false,gu:0}),t)}
+  if(B.e2){B.e2.flash=Math.max(0,B.e2.flash-dt*3.5);drawEnemy(c,B.e2,t)}
   drawHero(c,h,t);drawEnemy(c,e,t);drawEffects(c,dt);drawFx(c,dt);
   if(B.flashA>0){c.globalAlpha=B.flashA;c.fillStyle=B.flashC;c.fillRect(-20,-20,400,340);c.globalAlpha=1;B.flashA=Math.max(0,B.flashA-dt*3)}
   c.restore();
@@ -787,7 +802,7 @@ function skillCard(){return '<div class="card2"><b>Чадварууд</b>'
   +'<div class="row"><span class="grow">'+cl().th+'</span><span class="mini">эхнээс · 50 хийморь</span></div>'
   +Object.keys(SKL).map(k=>'<div class="row"><span class="grow">'+SKN[k]+'</span><span class="'+(S.lvl>=SKL[k].lvl?'tag good':'mini')+'">'+(S.lvl>=SKL[k].lvl?'нээгдсэн':'Түвшин '+SKL[k].lvl)+' · '+SKL[k].cost+'</span></div>').join('')
   +'<p class="mini" style="margin:0">'+cl().d+'</p></div>'}
-function updateHUD(){
+function updateHUD0(){
   const h=B.hero,e=B.enemy,C=cl();
   document.querySelector('.hud .who b').textContent=C.n;$('#aStrike b').textContent=C.st;$('#aThrow b').textContent=C.th;$('#aWind b').textContent=C.sk.wind;$('#aBless b').textContent=C.sk.bless;$('#aBolt b').textContent=C.sk.bolt;
   $('#hHp').style.width=Math.max(0,100*h.hp/h.max)+'%';
@@ -807,7 +822,7 @@ function updateHUD(){
     b.querySelector('small').textContent=ok?sk.cost+' хийморь':'Түвшин '+sk.lvl+'-д';
   });
 }
-function pickIntent(){
+function pickIntent0(){
   const e=B.enemy,r=Math.random();
   const w=e.boss?[.26,.34,.06]:[.38,.30,.07];
   const type=r<w[0]?'atk':r<w[0]+w[1]?'heavy':r<w[0]+w[1]+w[2]?'guard':'special';
@@ -818,7 +833,7 @@ function pickIntent(){
   else if(type==='special'){el.className='intent heavy';el.textContent={wolf:'Дайсан улих гэж байна. Цохилт нь хүчтэй болно',bandit:'Хорт сум ≈ '+d+', цус алдуулна',spirit:'Амь сорох ≈ '+d+', өөрөө эдгэрнэ',brute:'Газар доргиох ≈ '+d+', хийморь буурна'}[e.kind]}
   else{el.className='intent '+(type==='heavy'?'heavy':'atk');el.textContent=(type==='heavy'?'Хүчтэй цохилт ирж байна! ':'Дайсан цохих гэж байна ')+'≈ '+d}
 }
-function startBattle(L,opts){
+function startBattle0(L,opts){
   const n=L.n,boss=L.boss;
   const md=L.mode||0,nb=n<=20?n:20+(n-20)*.75;
   const ne=opts.run?(n<=25?n*.9:22.5+(n-25)*.6):nb+[0,8,16][md];
@@ -836,6 +851,45 @@ function startBattle(L,opts){
     if(!B||B.over)return;
     say('Тулаан эхэллээ. Нүүдлээ сонго.');pickIntent();B.busy=false;updateHUD();
   });
+}
+
+const twinWave=n=>n>=3&&n%5!==0&&n%2===1;
+function updateHUD(){updateHUD0();if(B&&B.e2)$('#eNum').textContent+=' \xb7 2-\u0440 \u0434\u0430\u0439\u0441\u0430\u043d '+Math.max(0,Math.ceil(B.e2.hp))+'/'+B.e2.max}
+function pickIntent(){pickIntent0();if(B.e2){const e2=B.e2,d2=Math.max(1,Math.round(e2.atk*(1+.25*(e2.buff||0))*(B.mods.eAtk||1)-heroDef())),el=$('#intent');el.textContent+=' \xb7 2-\u0440 \u0434\u0430\u0439\u0441\u0430\u043d \u2248 '+d2}}
+function startBattle(L,opts){
+  startBattle0(L,opts);
+  if(opts.run&&twinWave(L.n)){
+    const e=B.enemy,K=['wolf','bandit','spirit','brute'],k2=K[(K.indexOf(e.kind)+1+(L.n>>1)%3)%4];
+    e.hp=e.max=Math.round(e.max*.65);e.atk=Math.round(e.atk*.7);e.x=258;
+    B.e2={x:322,off:0,dy:0,rot:0,alpha:1,flash:0,arm:0,scale:.85,kind:k2,boss:false,hp:e.max,max:e.max,atk:e.atk,buff:e.buff,enraged:false,guarding:false,stun:false,P:pal(k2,L.region,false)};
+    $('#eName').textContent+=' + 2-\u0440 \u0434\u0430\u0439\u0441\u0430\u043d';
+    updateHUD();
+  }
+}
+async function promote(){
+  const o=B.enemy,n=B.e2;
+  await tween(600,p=>{o.rot=p*1.4;o.alpha=1-p;o.dy=p*18;o.off=p*30});
+  sfx('win');S.st.kills++;
+  B.e2=null;B.enemy=n;n.arrive=true;
+  await tween(450,p=>{n.x=lerp(322,258,p);n.scale=lerp(.85,1,p)});
+  $('#eName').textContent=$('#eName').textContent.replace(/ \+ .*$/,'');
+  pickIntent();updateHUD();
+}
+async function e2Turn(){
+  const e=B.e2,h=B.hero;if(!e)return;
+  if(e.stun){e.stun=false;return}
+  let dmg=Math.max(1,Math.round(e.atk*(1+.25*(e.buff||0))*(B.mods.eAtk||1)*rnd(.92,1.08)-heroDef()));
+  const sh=h.shield;if(sh){dmg=0;h.shield=false}else if(h.guard)dmg=Math.max(1,Math.round(dmg*.5));
+  say('2-\u0440 \u0434\u0430\u0439\u0441\u0430\u043d \u0446\u043e\u0445\u0438\u043b\u043e\u043e.');
+  let hit=false;
+  await tween(340,p=>{
+    e.off=-Math.sin(p*Math.PI)*170;e.arm=Math.sin(Math.min(1,p*1.3)*Math.PI);
+    if(!hit&&p>.5){hit=true;
+      if(sh){fxRing(h.x,GROUND-64,20,76,'#ffd54a',6,.4);floatText(h.x,GROUND-135,'\u0415\u0440\u04e9\u04e9\u043b \u0445\u0430\u0430\u043b\u0430\u0430!','#ffd54a',18);sfx('guard')}
+      else if(h.guard){h.flash=.5;B.shake=3;fxRing(h.x+22,GROUND-70,6,40,'#ffd54a',5,.3);floatText(h.x,GROUND-135,'-'+dmg,'#ffd54a',20);h.hp=Math.max(0,h.hp-dmg);sfx('guard');updateHUD()}
+      else hurtHero(dmg,false)}
+  });
+  e.off=0;e.arm=0;updateHUD();
 }
 function timing(){
   return new Promise(res=>{
@@ -1045,6 +1099,7 @@ async function actPotion(){
 }
 async function enemyTurn(){
   const e=B.enemy,h=B.hero;e.guarding=false;const hadBleed=!!h.bleed;
+  if(e.arrive){e.arrive=false;say('\u0414\u0430\u0439\u0441\u0430\u043d \u0443\u0440\u0430\u0433\u0448\u0438\u043b\u043b\u0430\u0430.');await sleep(500);return}
   if(e.boss&&!e.enraged&&e.hp>0&&e.hp/e.max<.35){
     e.enraged=true;e.buff=Math.min(3,e.buff+1);say('Ахлагч ууссан!');floatText(e.x,GROUND-HGT[e.kind]*e.scale-6,'ЦАЙЛАВ!','#ff8b6e',24);
     fxRing(e.x,GROUND-60,10,130,'#d1583a',8,.6);fxFlash('#d1583a',.25);B.shake=10;sfx('hurt');updateHUD();await sleep(750);
@@ -1086,7 +1141,7 @@ async function enemyTurn(){
 async function act(kind){
   if(!B||B.busy||B.over)return;
   B.busy=true;updateHUD();ac();
-  const e=B.enemy,h=B.hero;B.turn++;
+  let e=B.enemy;const h=B.hero;B.turn++;
   try{
     if(kind==='strike')await actStrike();
     else if(kind==='throw')await actThrow();
@@ -1097,11 +1152,11 @@ async function act(kind){
     else if(kind==='potion')await actPotion();
     if(!B||B.over)return;
     updateHUD();
-    if(e.hp<=0){await winBattle();return}
+    if(e.hp<=0){if(B.e2){await promote();e=B.enemy}else{await winBattle();return}}
     if(kind!=='guard')h.guard=false;
     await sleep(250);
-    if(kind==='guard'){await enemyTurn();h.guard=false;await tween(200,p=>{h.gu=1-p})}
-    else await enemyTurn();
+    if(kind==='guard'){await enemyTurn();if(B.e2&&h.hp>0)await e2Turn();h.guard=false;await tween(200,p=>{h.gu=1-p})}
+    else{await enemyTurn();if(B.e2&&h.hp>0)await e2Turn()}
     if(h.hp<=0){await loseBattle();return}
     if(kind!=='guard')h.gu=0;
     pickIntent();B.busy=false;say('Нүүдлээ сонго.');updateHUD();
